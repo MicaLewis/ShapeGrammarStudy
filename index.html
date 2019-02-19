@@ -1,14 +1,42 @@
 <!DOCTYPE html>
 <html>
+
 	<head>
 		<title>Shape Grammar</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			* {
+			  box-sizing: border-box;
+			}
+
+			/* Create two equal columns that floats next to each other */
+			.column {
+			  float: left;
+			  width: 50%;
+			  height: 600px;
+			  padding: 10px;
+			}
+
+			/* Clear floats after the columns */
+			.row:after {
+			  content: "";
+			  display: table;
+			  clear: both;
+			}
+		</style>
 	</head>
+	
 	<body>
+		<div class="row">
+			<div class="column" id="l_col"></div>
+			<div class="column" id="r_col"></div>
+		</div>
 		<script src="three.js-master/build/three.min.js"></script>
 		<script src="three.js-master/examples/js/controls/OrbitControls.js"></script>
-		<script src="js/test.js"></script>
-
+		<script src="js/voxel.js"></script>
+		<script src="js/Display.js"></script>
+		<script src="js/Matching.js"></script>
 	</body>
+	
 </html>
