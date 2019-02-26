@@ -11,21 +11,24 @@ function match() {
 	var rorigin = rd.shape.voxels[0]
 	var isMatch = true
 	ld.shape.voxels.some(function(lel) {
+		
 		isMatch = true
-		origin = rd.shape.voxels[0].clone().sub(lel)
+		origin = rd.shape.voxels[0].clone()
+		
 		rd.shape.voxels.forEach(function(rel) {
-			matching_point = origin.clone().add(rel)
+			matching_point = lel.clone().add(rel).add(origin)
 			index = ld.shape.isFilled(matching_point)
-			if ( isMatch && ld.shape.isFilled(matching_point) != -1 ) {
+			if ( isMatch && index != -1 ) {
 				match.push(matching_point)
 			} else {
 				isMatch = false
 				match = []
 			}
 		})
-		if(isMatch) {
-			return isMatch
-		}
+		
+		return isMatch;
+		
+		
 	})
 	ld.shape.highlight(match)
 	return match
