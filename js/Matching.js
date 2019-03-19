@@ -1,8 +1,7 @@
-var ld = new Display("l_col")
-var rd = new Display("r_col")
+var ld = Display.newDisplay("l_col", 4/3)
+var rd = Display.newDisplay("r_col", 4/3)
 ld.animate()
 rd.animate()
-
 
 function match() {
 	var match = []
@@ -10,7 +9,7 @@ function match() {
 	var matching_point
 	var rorigin = rd.shape.voxels[0]
 	var isMatch = true
-	ld.shape.voxels.some(function(lel) {
+	ld.shape.voxels.some(function(d) {
 		
 		isMatch = true
 		origin = rd.shape.voxels[0].clone()
@@ -34,4 +33,4 @@ function match() {
 	return match
 }
 
-document.addEventListener( 'keydown', function(event) { console.log(match()) } );
+document.addEventListener( 'mousedown', function(event) { console.log(match()) } );
