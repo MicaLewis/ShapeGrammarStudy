@@ -62,7 +62,7 @@ class Display {
 			
 		this.scene.add(this.cursor)
 		
-		this.highlit = new 
+		//this.highlit 
 		
 		this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 		

@@ -65,7 +65,7 @@ class Shape {
 		this.root.object.material = new THREE.LineBasicMaterial( { color: 0xff0000 } )
 		
 		if ( lhand == true ) {
-			this.nterm = this.add(new THREE.Vector3(0, 0, 0), 0, 2);)
+			this.nterm = this.add(new THREE.Vector3(0, 0, 0), 0, 2);
 		}
 		
 	}
