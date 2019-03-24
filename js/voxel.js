@@ -50,9 +50,12 @@ function Voxel (pos, type, lvl, par, scene) {
 
 class Shape {
 	
-	constructor(scene) {
+	constructor(scene, lhand) {
 		
-		this.objects = []
+		this.solids = []
+		this.boundaries	= {}
+		
+		this.nterm = null
 		
 		var start_lvl = 3
 		
@@ -60,6 +63,11 @@ class Shape {
 		
 		this.root = this.create( (new THREE.Vector3()).subScalar( Math.pow(2, start_lvl-1) ), 0, start_lvl, null )
 		this.root.object.material = new THREE.LineBasicMaterial( { color: 0xff0000 } )
+		
+		if ( lhand == true ) {
+			this.nterm = this.add(new THREE.Vector3(0, 0, 0), 0, 2);)
+		}
+		
 	}
 	
 	// calculates index in childs list of a given position
@@ -90,6 +98,23 @@ class Shape {
 			pos.z < v.pos.z ||  pos.z > v.pos.z + Math.pow(2, v.lvl) ;
 	}
 	
+	// handles all object related functions of creating a new voxel
+	create(pos, type, lvl, par) {
+		
+		var newVoxel = new Voxel(pos, type, lvl, par, this.scene)
+		
+		if (type != 0) {
+			this.solids.push(newVoxel.cube)
+		} else {
+			if( !( lvl in this.boundaries ) )
+				this.boundaries[lvl] = []
+			this.boundaries[lvl].push(newVoxel.cube)
+		}
+		
+		return newVoxel
+	
+	}
+	
 	// handles changing of type
 	retype(v, type) {
 		
@@ -102,18 +127,18 @@ class Shape {
 		if(type < 1) {
 			
 			v.object = new THREE.LineSegments( wiregeo, wiremat )
-			this.objects.splice(this.objects.indexOf(v.cube), 1);
+			this.solids.splice(this.solids.indexOf(v.cube), 1);
 			
 		} else if (type == 1) {
 			
 			v.object = new THREE.Mesh( geo, normmat )
-			this.objects.push(v.cube)
+			this.solids.push(v.cube)
 			
 		} else {
 			
 			v.object = new THREE.Mesh( geo, ntermmat )
 			v.object.material.color = new THREE.Color( typeColor(type) )
-			this.objects.push(v.cube)
+			this.solids.push(v.cube)
 			
 		}
 		
@@ -122,6 +147,38 @@ class Shape {
 		
 		this.scene.add(v.object)
 		
+	}
+	
+	// handles deletion of voxel, recursively deletes all childs
+	del(v) {
+		
+		if (v == null) return
+		
+		this.scene.remove(v.object)
+		this.scene.remove(v.cube)
+		
+		if ( v.type == 0 ) {
+			this.boundaries[v.lvl].splice(this.solids.indexOf(v.cube), 1)
+		} else {
+			this.solids.splice(this.solids.indexOf(v.cube), 1);
+		}
+		
+		v.par.childs[v.par.childs.indexOf(v)] = null
+		
+		for( var i = 0; i < 8; i++ ) {
+			if( v.childs[i] != null ) {
+				this.del(v.childs[i])
+			}
+		}
+		
+		
+	}
+	
+	objects(lvl) {
+		if (lvl in this.boundaries)
+			return this.solids.concat(this.boundaries[lvl])
+		else
+			return this.solids
 	}
 	
 	// Breaks a type1 voxel into 8 type1 nodes
@@ -156,54 +213,42 @@ class Shape {
 			}
 			this.retype(v, type)
 			
-			this.merge(v.par)
+			return this.merge(v.par)
+			
+		} else {
+			return v
 		}
 	}
 	
-	// handles deletion of voxel, recursively deletes all childs
-	del(v) {
+	clear(v) {
 		
-		if (v == null) return
-		
-		this.scene.remove(v.object)
-		this.scene.remove(v.cube)
-		
-		this.objects.splice(this.objects.indexOf(v.cube), 1);
-		
-		v.par.childs[v.par.childs.indexOf(v)] = null
+		var same = v != this.root
 		
 		for( var i = 0; i < 8; i++ ) {
-			if( v.childs[i] != null ) {
-				this.del(v.childs[i])
+			if ( v.childs[i] != null ) {
+				same = false
 			}
 		}
 		
-		
-	}
-	
-	// handles all object related functions of creating a new voxel
-	create(pos, type, lvl, par) {
-		
-		var newVoxel = new Voxel(pos, type, lvl, par, this.scene)
-		if (type != 0) {
-			this.objects.push(newVoxel.cube)
+		if (same) {
+			
+			var par = v.par
+			this.del(v)
+			this.clear(par)
+			
 		}
-		
-		return newVoxel
-	
 	}
 	
 	add(pos, lvl, type) {
 		
 		if( this.oob(this.root, pos) ) {
 			//add root expansion later
-			return false
+			return null
 		}
 		
 		return this.addIn( this.root, pos, lvl, type )
 		
 	}
-	
 	
 	addIn( v, pos, lvl, type) {
 		
@@ -220,7 +265,7 @@ class Shape {
 				
 				if( v.lvl-1 == lvl ) {
 					
-					v.childs[index] = this.create( this.childPos(index, v), type, lvl, v, this.scene )
+					v.childs[index] = this.create( this.childPos(index, v), type, lvl, v)
 					return true
 					
 				} else {
@@ -231,31 +276,29 @@ class Shape {
 		} else if (v.type > 1) {
 			
 			// Do not crack non terminals
-			return false
+			return null
 			
 		} else if( v.childs[index] == null ) {
 			
 			if( v.lvl-1 > lvl ) {
 				
 				//fill in with new type 0 voxels
-				v.childs[index] = this.create( this.childPos(index, v), 0, v.lvl-1, v, this.scene )
+				v.childs[index] = this.create( this.childPos(index, v), 0, v.lvl-1, v )
 				this.merge(v)
 				return this.addIn( v.childs[index], pos, lvl, type )
 				
 			} else {
 				
-				v.childs[index] = this.create( this.childPos(index, v), type, lvl, v, this.scene )
-				this.merge(v)
-				return true
+				v.childs[index] = this.create( this.childPos(index, v), type, lvl, v )
+				return this.merge(v)
 			}
 			
 		} else if( v.lvl-1 > lvl ) {
 			return this.addIn( v.childs[index], pos, lvl, type )
 			
 		} else if( v.childs[index].type != 0 ) {
-			v.childs[index] = this.create( this.childPos(index, v), type, lvl, v, this.scene )
-			this.merge(v)
-			return true
+			v.childs[index] = this.create( this.childPos(index, v), type, lvl, v )
+			return this.merge(v)
 			
 		}
 	}
@@ -280,7 +323,7 @@ class Shape {
 		if( v == null ) {
 			return -1
 		} else if( v.type > 0 || lvl == v.lvl) {
-			return v.type
+			return v
 		} else {
 			return this.searchIn(v.childs[index], pos, lvl)
 		}
@@ -294,7 +337,7 @@ class Shape {
 			return false
 		}
 		
-		return removeIn( this.root, pos, lvl )
+		return this.removeIn( this.root, pos, lvl )
 	}
 	
 	removeIn( v, pos, lvl ) {
@@ -305,62 +348,39 @@ class Shape {
 		
 		if( v.type > 1 || v.lvl == lvl ) {
 			
-			del(v)
+			var par = v.par
+			this.del(v)
+			this.clear(par)
 			return true
 			
 		} else if ( v.type == 1 ) {
 			
-			crack(v)
-			return removeIn(v.childs[index])
+			this.crack(v)
+			return this.removeIn(v.childs[index], pos, lvl)
 			
 		} else {
 			
-			return removeIn(v.childs[index])
+			return this.removeIn(v.childs[index], pos, lvl)
 			
 		}
 	}
 	
-	highlight(vs) {
-		var i
-		var myVoxel
-		for( i = 0; i < vs.length; i++ ) {
-			v.object.material = highmat
-		}
+	// left hand shapes only, lvl is relative.
+	rescale (lvl) {
+		return //new shape
 	}
 	
-	unhighlight(v) {
+	match (lhand) {
+		return [] // list of locations
+	}
+	
+	// only highlights left hand shapes
+	highlight (lhand, loc, lvl) {
 		
-		if(v != null) {
-			
-			retype(v, v.type)
+	}
+	
+	replace (lhand, rhand, loc, lvl) {
 		
-			for(var i = 0; i < 8; i++ ) {
-				unhighlight(v)
-			}
-		}
 	}
 	
-	//old code, hopefully not useful
-	/*locationOf(o) {
-		var index = this.objects.indexOf(o)
-		return this.voxels[index]
-	}
-	
-	objectAt(v) {
-		var index = this.isFilled(v)
-		if (index == -1) {
-			return null
-		} else {
-			return this.objects[index]
-		}
-	}
-	
-	remove(v, scene) {
-		var index = this.isFilled(v)
-		if ( index != -1 ) {
-			var removed = objects.splice(index, 1)
-			scene.remove(removed)
-			this.voxels.splice(index, 1)
-		}
-	}*/
 }

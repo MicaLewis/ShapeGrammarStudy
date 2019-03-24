@@ -8,9 +8,14 @@ var mlevel = -1;
 document.addEventListener( 'keydown', function(event) {
 	event.preventDefault();
 		
-	if (event.key == 'a' ) {
+	if ( event.key == 'a' )
 		maction = maction == 1 ? 0 : 1
-	}
+	if ( event.key == '.' )
+		mlevel += 1
+	if ( event.key == ',' )
+		mlevel -= 1
+	if ( event.key == 'r')
+		maction = maction == -1 ? 0 : -1
 	
 	if (event.keyCode >= 48 && event.keyCode <= 57) {
 		var type = event.keyCode - 46
@@ -40,7 +45,7 @@ class Display {
 		this.mouse = new THREE.Vector2();
 		
 		this.shape = new Shape(this.scene);
-		this.shape.add(new THREE.Vector3(0, 0, 0), 0, 2)
+		this.shape.add(new THREE.Vector3(0, 0, 0), 0, 2);
 		
 		var light = new THREE.DirectionalLight( 0xffffff, 1.2 )
 		light.position.set(-1, 3, -2)
@@ -56,6 +61,8 @@ class Display {
 			} ) )
 			
 		this.scene.add(this.cursor)
+		
+		this.highlit = new 
 		
 		this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 		
@@ -76,9 +83,6 @@ class Display {
 		this.renderer.domElement.addEventListener( 'mouseenter', function(event) { thiz.enabled = true } )
 		this.renderer.domElement.addEventListener( 'mouseleave', function(event) { thiz.enabled = false } )
 		this.renderer.domElement.addEventListener( 'mousedown', function(event) { if(thiz.enabled) thiz.onMouseDown(event) } )
-		//window.addEventListener( 'resize', function(event) { thiz.onWindowResize(event) }, false );
-		//document.addEventListener( 'keydown', function(event) { thiz.onKeyDown(event) }, true );
-		//add an on mouse leave event to prevent editing while inside current object
 
 	}
 	
@@ -88,8 +92,6 @@ class Display {
 		document.addEventListener( 'keydown', function(event) { disp.onKeyDown(event) } );
 		return disp
 	}
-	
-	
 
 	animate() {
 		
@@ -108,32 +110,7 @@ class Display {
 		
 		this.mouse.set( ( event.offsetX / this.column.clientWidth ) * 2 - 1, - ( event.offsetY / this.column.clientHeight) * 2 + 1 );
 		
-		if ( maction != 0 ) {
-			
-			this.raycaster.setFromCamera( this.mouse, this.camera )
-			var intersects = this.raycaster.intersectObjects( this.shape.objects, true );
-			
-			if ( intersects.length > 0 ) {
-				
-				this.cursor.material.opacity = .6
-				
-				if ( maction > 0 ) {
-					
-					var loc = intersects[0].point.clone()
-					loc.add( intersects[0].face.normal.clone().multiplyScalar( Math.pow( 2, mlevel-1 ) ) )
-					
-					loc.divideScalar( Math.pow( 2, mlevel ) ).floor().multiplyScalar( Math.pow( 2, mlevel ) )
-					var scl = new THREE.Vector3(1,1,1).multiplyScalar(Math.pow( 2, mlevel ))
-					
-					this.cursor.scale.copy( scl )
-					this.cursor.position.addVectors( loc, scl.divideScalar(2) )
-					
-				}
-			} else {
-				this.cursor.material.opacity = 0
-			}
-			
-		}
+		this.updateCursor()
 	}
 
 	onKeyDown( event ) {
@@ -142,34 +119,69 @@ class Display {
 		
 		this.cursor.material.color = new THREE.Color( typeColor(maction) )
 		
-		if ( maction == 0 ) {
-			this.cursor.material.opacity = 0
-		} else {
-			this.cursor.material.opacity = .6
-		}
+		this.updateCursor()
 		
 	}
 	
+	updateCursor () {
+		
+		this.raycaster.setFromCamera( this.mouse, this.camera )
+		var intersects = this.raycaster.intersectObjects( this.shape.objects(mlevel), true );
+		
+		if ( intersects.length > 0 && maction > 0 ) {
+			
+			this.cursor.material.opacity = .6
+				
+			var loc = intersects[0].point.clone()
+			loc.add( intersects[0].face.normal.clone().multiplyScalar( Math.pow( 2, mlevel-1 ) ) )
+			
+			loc.divideScalar( Math.pow( 2, mlevel ) ).floor().multiplyScalar( Math.pow( 2, mlevel ) )
+			var scl = new THREE.Vector3(1,1,1).multiplyScalar(Math.pow( 2, mlevel ))
+			
+			this.cursor.scale.copy( scl )
+			this.cursor.position.addVectors( loc, scl.divideScalar(2) )
+			
+		} else if ( intersects.length > 0 && maction == -1 ) {
+			
+			this.cursor.material.opacity = .6
+				
+			var loc = intersects[0].point.clone()
+			loc.sub( intersects[0].face.normal.clone().multiplyScalar( Math.pow( 2, mlevel-1 ) ) )
+			
+			loc.divideScalar( Math.pow( 2, mlevel ) ).floor().multiplyScalar( Math.pow( 2, mlevel ) )
+			var scl = new THREE.Vector3(1,1,1).multiplyScalar(Math.pow( 2, mlevel ))
+			
+			this.cursor.scale.copy( scl.clone().multiplyScalar(1.05) )
+			this.cursor.position.addVectors( loc, scl.divideScalar(2) )
+			
+		} else {
+			this.cursor.material.opacity = 0
+		}
+	}
+	
 	onMouseDown (event) {
+		
 		event.preventDefault();
 		
 		this.mouse.set( ( event.offsetX / this.column.clientWidth ) * 2 - 1, - ( event.offsetY / this.column.clientHeight) * 2 + 1 );
+		this.raycaster.setFromCamera( this.mouse, this.camera )
+			
+		var intersects = this.raycaster.intersectObjects( this.shape.objects(mlevel), true );
 		
-		if( maction != 0 ) {
+		if ( intersects.length > 0 ) {
 			
-			this.raycaster.setFromCamera( this.mouse, this.camera )
-			var intersects = this.raycaster.intersectObjects( this.shape.objects, true );
+			var loc = intersects[0].point.clone()
 			
-			if ( intersects.length > 0 ) {
+			if ( maction > 0 ) {
 				
-				if ( maction > 0 ) {
-					
-					var loc = intersects[0].point.clone()
-					loc.add( intersects[0].face.normal.clone().multiplyScalar( Math.pow( 2, mlevel-1 ) ) )
-					
-					this.shape.add( loc, mlevel, maction )
-					
-				}
+				loc.add( intersects[0].face.normal.clone().multiplyScalar( Math.pow( 2, mlevel-1 ) ) )
+				this.shape.add( loc, mlevel, maction )
+				
+			} else if ( maction == -1 ) {
+				
+				loc.sub( intersects[0].face.normal.clone().multiplyScalar( Math.pow( 2, mlevel-1 ) ) )
+				this.shape.remove( loc, mlevel )
+				
 			}
 		}
 	}

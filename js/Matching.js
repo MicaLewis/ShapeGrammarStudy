@@ -33,4 +33,4 @@ function match() {
 	return match
 }
 
-document.addEventListener( 'mousedown', function(event) { console.log(match()) } );
+//document.addEventListener( 'mousedown', function(event) { console.log(match()) } );
