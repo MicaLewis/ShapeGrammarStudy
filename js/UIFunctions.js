@@ -40,12 +40,40 @@ function selectMatch(index) {
 	
 }
 
-
+var matches = []
 function findMatches() {
-	var matches = []
+	matches = []
+	
+	left = ld.shape
+	prime = primary.shape
+	
+	prime.nterms[left.nterm.type].forEach( function(primeNterm){
+		
+		t = transform( new THREE.Matrix4(), primeNterm.lvl-left.nterm.lvl )
+		t.mat.setPosition(primeNterm.lvl)
+		t.mat.scale(Math.pow(2, primeNterm.lvl-left.nterm.lvl))
+		
+		var match = matchIn(left.root, prime, transform)
+		
+	})
 	
 	return matches
 }
+
+function matchIn(v, prime, transform) {
+	
+	if( v == null || v.type > 1) {
+		return true
+	} else if( v.type == 1 ) {
+		return prime.search( v.pos.clone.applyMatrix4(transform.mat),
+		v.lvl + transform.lvl ).type == 1;
+	} else {
+		return v.childs.every( function(child){
+			matchIn(child, prime, transform)
+		})
+	}
+}
+
 
 function applyMatch() {
 	

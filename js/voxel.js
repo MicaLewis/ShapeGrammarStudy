@@ -344,7 +344,7 @@ class Shape {
 		
 		if( this.oob(this.root, pos) ) {
 			//add root expansion later
-			return false
+			return null
 		}
 		
 		return searchIn(this.root, pos, lvl, scene)
@@ -445,10 +445,6 @@ class Shape {
 				applyIn( v.childs[i], to_obj )
 			}
 		}
-	}
-	
-	replace (lhand, rhand, transform) {
-		
 	}
 	
 }
