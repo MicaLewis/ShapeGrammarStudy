@@ -40,24 +40,33 @@ function Voxel (pos, type, lvl, par, scene) {
 	}
 	
 	this.object.position.addVectors( pos, new THREE.Vector3().setScalar( Math.pow(2, lvl-1) ) )
-	this.object.scale.setScalar(Math.pow(2, lvl))
+	this.object.scale.setScalar( Math.pow(2, lvl) )
 	this.cube.position.addVectors( pos, new THREE.Vector3().setScalar( Math.pow(2, lvl-1) ) )
-	this.cube.scale.setScalar(Math.pow(2, lvl))
+	this.cube.scale.setScalar( Math.pow(2, lvl) )
 	
 	scene.add(this.cube)
 	scene.add(this.object)
 }
 
+function transform( m, l ) {
+	this.mat = m
+	this.lvl = l
+}
+
+const start_lvl = 3
+
 class Shape {
 	
-	constructor(scene, lhand) {
+	constructor(scene, lhand, max_lvl) {
 		
-		this.solids = []
-		this.boundaries	= {}
+		this.solids = [] // list of all bounding boxes of non terminals and terminals for collisions
+		this.boundaries	= {} // dict of all type 0 (branch)
+		this.nterms = {}
 		
 		this.nterm = null
-		
-		var start_lvl = 3
+		this.max_lvl = Infinity
+		if(max_lvl != undefined)
+			this.max_lvl = max_lvl
 		
 		this.scene = scene
 		
@@ -65,7 +74,7 @@ class Shape {
 		this.root.object.material = new THREE.LineBasicMaterial( { color: 0xff0000 } )
 		
 		if ( lhand == true ) {
-			this.nterm = this.add(new THREE.Vector3(0, 0, 0), 0, 2);
+			this.nterm = this.add(new THREE.Vector3(0, 0, 0), max_lvl, 2);
 		}
 		
 	}
@@ -103,8 +112,15 @@ class Shape {
 		
 		var newVoxel = new Voxel(pos, type, lvl, par, this.scene)
 		
-		if (type != 0) {
+		if (type == 1) {
 			this.solids.push(newVoxel.cube)
+			
+		} else if(type > 1) {
+			if( !( type in this.nterms ) )
+				this.nterms[type] = []
+			this.nterms[type].push(newVoxel)
+			this.solids.push(newVoxel.cube)
+			
 		} else {
 			if( !( lvl in this.boundaries ) )
 				this.boundaries[lvl] = []
@@ -129,12 +145,28 @@ class Shape {
 			v.object = new THREE.LineSegments( wiregeo, wiremat )
 			this.solids.splice(this.solids.indexOf(v.cube), 1);
 			
+			if( !( v.lvl in this.boundaries ) )
+				this.boundaries[v.lvl] = []
+			this.boundaries[v.lvl].push(v.cube)
+			
 		} else if (type == 1) {
 			
 			v.object = new THREE.Mesh( geo, normmat )
 			this.solids.push(v.cube)
+			this.boundaries[v.lvl].splice(this.solids.indexOf(v.cube), 1)
+			
+			if( this.boundaries[v.lvl] != undefined && v.cube in this.boundaries[v.lvl] )
+				this.boundaries[v.lvl].splice(this.solids.indexOf(v.cube), 1)
 			
 		} else {
+			
+			// remove current place in nterm list
+			this.nterms[v.type].splice(this.nterms[v.type].indexOf(v), 1)
+			
+			// re-push into correct list
+			if( !( type in this.nterms ) )
+				this.nterms[type] = []
+			this.nterms[type].push(newVoxel.cube)
 			
 			v.object = new THREE.Mesh( geo, ntermmat )
 			v.object.material.color = new THREE.Color( typeColor(type) )
@@ -157,20 +189,22 @@ class Shape {
 		this.scene.remove(v.object)
 		this.scene.remove(v.cube)
 		
-		if ( v.type == 0 ) {
-			this.boundaries[v.lvl].splice(this.solids.indexOf(v.cube), 1)
+		if ( v.type < 1 ) {
+			this.boundaries[v.lvl].splice(this.boundaries[v.lvl].indexOf(v.cube), 1)
+			
+		} else if ( v.type > 1) {
+			this.nterms[v.type].splice(this.nterms[v.type].indexOf(v), 1)
+			
 		} else {
 			this.solids.splice(this.solids.indexOf(v.cube), 1);
 		}
 		
-		v.par.childs[v.par.childs.indexOf(v)] = null
+		if( v != this.root )
+			v.par.childs[v.par.childs.indexOf(v)] = null;
 		
 		for( var i = 0; i < 8; i++ ) {
-			if( v.childs[i] != null ) {
-				this.del(v.childs[i])
-			}
+			this.del(v.childs[i])
 		}
-		
 		
 	}
 	
@@ -213,7 +247,11 @@ class Shape {
 			}
 			this.retype(v, type)
 			
-			return this.merge(v.par)
+			if( v.lvl < this.max_lvl ) {
+				return this.merge(v.par)
+			} else {
+				return v
+			}
 			
 		} else {
 			return v
@@ -241,7 +279,7 @@ class Shape {
 	
 	add(pos, lvl, type) {
 		
-		if( this.oob(this.root, pos) ) {
+		if( this.oob(this.root, pos) || lvl > this.max_lvl || ( this.nterm != null && type > 1 ) ) {
 			//add root expansion later
 			return null
 		}
@@ -290,7 +328,7 @@ class Shape {
 			} else {
 				
 				v.childs[index] = this.create( this.childPos(index, v), type, lvl, v )
-				return this.merge(v)
+				return this.merge(v.childs[index])
 			}
 			
 		} else if( v.lvl-1 > lvl ) {
@@ -298,8 +336,7 @@ class Shape {
 			
 		} else if( v.childs[index].type != 0 ) {
 			v.childs[index] = this.create( this.childPos(index, v), type, lvl, v )
-			return this.merge(v)
-			
+			return this.merge(v.childs[index])
 		}
 	}
 
@@ -307,7 +344,7 @@ class Shape {
 		
 		if( this.oob(this.root, pos) ) {
 			//add root expansion later
-			return false
+			return null
 		}
 		
 		return searchIn(this.root, pos, lvl, scene)
@@ -315,13 +352,12 @@ class Shape {
 	}
 	
 	// returns type at given position and level
-	// Am I sure I should return type?
 	searchIn( v, pos, lvl ) {
 		
 		var index = this.childIndex(v, pos)
 		
 		if( v == null ) {
-			return -1
+			return null
 		} else if( v.type > 0 || lvl == v.lvl) {
 			return v
 		} else {
@@ -342,7 +378,7 @@ class Shape {
 	
 	removeIn( v, pos, lvl ) {
 		
-		if(v == null) return false
+		if( v == null || v == this.nterm ) return false
 		
 		var index = this.childIndex( v, pos )
 		
@@ -365,22 +401,50 @@ class Shape {
 		}
 	}
 	
-	// left hand shapes only, lvl is relative.
-	rescale (lvl) {
-		return //new shape
-	}
-	
-	match (lhand) {
-		return [] // list of locations
-	}
-	
-	// only highlights left hand shapes
-	highlight (lhand, loc, lvl) {
+	copy ( shape, scene ) {
 		
+		if(shape != this) {
+			this.del( this.root );
+			
+			this.scene = scene
+			
+			this.root = this.create( (new THREE.Vector3()).subScalar( Math.pow(2, start_lvl-1) ), 0, start_lvl, null )
+			this.root.object.material = new THREE.LineBasicMaterial( { color: 0xff0000 } )
+			this.nterm = shape.nterm
+			this.copyIn(shape.root)
+		}
 	}
 	
-	replace (lhand, rhand, loc, lvl) {
+	copyIn ( v ) {
 		
+		if ( v == null ) return
+		
+		if ( v.type == 0 ) {
+			for ( var i = 0; i < 8; i++ ) {
+				this.copyIn( v.childs[i] )
+			}
+		}
+		
+		if ( v.type > 0 ) {
+			this.add( v.pos, v.lvl, v.type )
+		}
+	}
+	
+	// applies function argument to all objects
+	applyToObjects ( to_obj ) {
+		this.applyIn( this.root, to_obj )
+	}
+	
+	applyIn ( v, to_obj ) {
+		
+		if ( v != null ) {
+			
+			to_obj( v.object )
+			
+			for ( var i = 0; i < 8; i++ ) {
+				applyIn( v.childs[i], to_obj )
+			}
+		}
 	}
 	
 }

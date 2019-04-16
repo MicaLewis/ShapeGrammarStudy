@@ -1,0 +1,17 @@
+TODO:
+
+- UI functions
+	- New Rule
+	- Change Name
+	- Select Rule
+	- Find Matches
+	- Apply Match
+	- select Match
+
+- implement rule class	
+	- left hand
+	- right hand
+	- swap in right and left to display function in button action
+
+- test highlighted shape
+- match based on list
