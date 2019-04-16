@@ -6,33 +6,94 @@
 		<meta charset="utf-8">
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+		<style>
+			.scrollable-menu {
+				height: auto;
+				max-height: 200px;
+				overflow-x: hidden;
+			}
+		</style>
 	</head>
 	
 	<body>
 	<div class="container">
-		<div class="row">
-			<div class="col-md-10" id="l_col"></div>
-			<div class="col-md-2" id="l_col">
+		<h2>Shape Grammar</h2>
+		<div class="btn-toolbar mb-2" role="toolbar">
+		
+			<div class="input-group flex-nowrap mr-2">
+				<div class="input-group-prepend">
+					<button type="button" class="btn btn-outline-secondary" id="new-rule">New Rule</button>
+					<span class="input-group-text">Current Rule:</span>
+				</div>
+				<input type="text" class="form-control" value="Rule #1" id="current-rule" disabled>
+				<div class="input-group-append">
+					<button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+						Select Rule
+					</button>
+					<div class="dropdown-menu scrollable-menu" id="rule-menu">
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+						<a class="dropdown-item" href="#">Action</a>
+						<a class="dropdown-item" href="#">Another action</a>
+					</div>
+				</div>
+			</div>
+			
+			<div class="input-group" role="group">
+				<div class="input-group-prepend">
+					<button type="button" class="btn btn-outline-secondary" id="find-matches">Find Matches</button>
+					<span class="input-group-text" id="">Current Match:</span>
+				</div>
+				<input class="form-control" type="number" value="0" min="0" id="current-match">
+				<div class="input-group-append">
+					<button type="button" class="btn btn-outline-secondary" id="apply-match">Apply Match</button>
+				</div>
+			</div>
+		</div>
+		<div class="row mt-2">
+			<div class="col-md-5" id="l_col"></div>
+			<div class="col-md-5" id="r_col"></div>
+			<div class="col-md-2">
 				<h2>Controls:</h2>
 				Orbit: click & drag<br>
 				Pan: shift+click & drag<br>
 				Zoom in/out: Scroll Wheel<br><br>
-				Place terminal: a key
-				Place non-terminal: 0-9 keys
-				Remove block: r key
-				Increase scale: . key
-				Decrease scale: , key
+				Place terminal: a key<br>
+				Place non-terminal: 0-9 keys<br>
+				Remove block: r key<br>
+				Increase scale: . key<br>
+				Decrease scale: , key<br>
 			</div>
 		</div>
+		<div class="row">
+			<div class="col-md-10" id="primary"></div>
+		</div>
 	</div>
-		<script src="three.js-master/build/three.min.js"></script>
-		<script src="three.js-master/examples/js/controls/OrbitControls.js"></script>
-		<script src="js/voxel.js"></script>
-		<script src="js/Display.js"></script>
-		<script src="js/Matching.js"></script>
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.js"></script>
+	<script src="js/voxel.js"></script>
+	<script src="js/Display.js"></script>
+	<script src="js/Rule.js"></script>
 	</body>
 	
 </html>

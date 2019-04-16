@@ -2,7 +2,7 @@
 //var mouse, raycaster;
 //var shape;
 
-var maction = 1;
+var maction = 0;
 var mlevel = -1;
 
 document.addEventListener( 'keydown', function(event) {
@@ -26,7 +26,7 @@ document.addEventListener( 'keydown', function(event) {
 
 class Display {
 
-	constructor(id, aspect) {
+	constructor(id, aspect, lhand, max_lvl) {
 		
 		this.column = document.getElementById(id)
 		this.aspect = aspect
@@ -44,8 +44,7 @@ class Display {
 		this.raycaster = new THREE.Raycaster();
 		this.mouse = new THREE.Vector2();
 		
-		this.shape = new Shape(this.scene);
-		this.shape.add(new THREE.Vector3(0, 0, 0), 0, 2);
+		this.shape = new Shape(this.scene, lhand, max_lvl);
 		
 		var light = new THREE.DirectionalLight( 0xffffff, 1.2 )
 		light.position.set(-1, 3, -2)
@@ -58,11 +57,18 @@ class Display {
 			new THREE.BoxGeometry(),
 			new THREE.MeshLambertMaterial({
 				color: 0xffffff, opacity: 0, transparent: true
-			} ) )
+			}))
+			
+		this.ground = new THREE.Mesh(
+			new THREE.PlaneGeometry(256,256).rotateX(3*Math.PI/2),
+			new THREE.MeshBasicMaterial({
+				color: 0x000000, side: THREE.DoubleSide, opacity: 0, transparent: true
+			}))
 			
 		this.scene.add(this.cursor)
+		this.scene.add(this.ground)
 		
-		//this.highlit 
+		this.highlit = new Shape(this.scene, lhand, max_lvl)
 		
 		this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 		
@@ -86,8 +92,19 @@ class Display {
 
 	}
 	
-	static newDisplay (id, aspect, isU=false) {
-		var disp = new Display(id, aspect)
+	highlight( shape, transform ) {
+		
+		this.highlit.copy( shape )
+		
+		this.highlit.applyToObjects( function(obj) {
+			obj.applyMatrix( transform )
+			obj.material.opacity = .5
+		} )
+
+	}
+	
+	static newDisplay (id, aspect, lhand, max_lvl) {
+		var disp = new Display(id, aspect, lhand, max_lvl)
 		window.addEventListener( 'resize', function(event) { disp.onWindowResize(event) }, false );
 		document.addEventListener( 'keydown', function(event) { disp.onKeyDown(event) } );
 		return disp
@@ -117,7 +134,9 @@ class Display {
 		
 		event.preventDefault();
 		
-		this.cursor.material.color = new THREE.Color( typeColor(maction) )
+		this.cursor.material.color = new THREE.Color( typeColor( maction ) )
+		
+		this.controls.enabled = maction == 0
 		
 		this.updateCursor()
 		
@@ -126,12 +145,13 @@ class Display {
 	updateCursor () {
 		
 		this.raycaster.setFromCamera( this.mouse, this.camera )
-		var intersects = this.raycaster.intersectObjects( this.shape.objects(mlevel), true );
+		let objs = this.shape.objects(mlevel).concat(this.ground)
+		var intersects = this.raycaster.intersectObjects( objs, true );
 		
 		if ( intersects.length > 0 && maction > 0 ) {
 			
 			this.cursor.material.opacity = .6
-				
+			
 			var loc = intersects[0].point.clone()
 			loc.add( intersects[0].face.normal.clone().multiplyScalar( Math.pow( 2, mlevel-1 ) ) )
 			
@@ -144,7 +164,7 @@ class Display {
 		} else if ( intersects.length > 0 && maction == -1 ) {
 			
 			this.cursor.material.opacity = .6
-				
+			
 			var loc = intersects[0].point.clone()
 			loc.sub( intersects[0].face.normal.clone().multiplyScalar( Math.pow( 2, mlevel-1 ) ) )
 			
@@ -165,8 +185,9 @@ class Display {
 		
 		this.mouse.set( ( event.offsetX / this.column.clientWidth ) * 2 - 1, - ( event.offsetY / this.column.clientHeight) * 2 + 1 );
 		this.raycaster.setFromCamera( this.mouse, this.camera )
-			
-		var intersects = this.raycaster.intersectObjects( this.shape.objects(mlevel), true );
+		
+		let objs = this.shape.objects(mlevel).concat(this.ground)
+		var intersects = this.raycaster.intersectObjects( objs, true );
 		
 		if ( intersects.length > 0 ) {
 			
@@ -192,3 +213,10 @@ class Display {
 		this.renderer.setSize( this.column.clientWidth, this.column.clientWidth/this.aspect );
 	}
 }
+
+var ld = Display.newDisplay("l_col", 4/3, true, -1)
+var rd = Display.newDisplay("r_col", 4/3, false, -1)
+var pr = Display.newDisplay("primary", 16/9, false, Infinity)
+ld.animate()
+rd.animate()
+pr.animate()
