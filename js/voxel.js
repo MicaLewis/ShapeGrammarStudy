@@ -203,11 +203,8 @@ class Shape {
 			v.par.childs[v.par.childs.indexOf(v)] = null;
 		
 		for( var i = 0; i < 8; i++ ) {
-			if( v.childs[i] != null ) {
-				this.del(v.childs[i])
-			}
+			this.del(v.childs[i])
 		}
-		
 		
 	}
 	
@@ -404,11 +401,18 @@ class Shape {
 		}
 	}
 	
-	copy ( shape ) {
+	copy ( shape, scene ) {
 		
-		this.del( this.root );
-		this.root = this.create( (new THREE.Vector3()).subScalar( Math.pow(2, start_lvl-1) ), 0, start_lvl, null )
-		
+		if(shape != this) {
+			this.del( this.root );
+			
+			this.scene = scene
+			
+			this.root = this.create( (new THREE.Vector3()).subScalar( Math.pow(2, start_lvl-1) ), 0, start_lvl, null )
+			this.root.object.material = new THREE.LineBasicMaterial( { color: 0xff0000 } )
+			this.nterm = shape.nterm
+			this.copyIn(shape.root)
+		}
 	}
 	
 	copyIn ( v ) {
@@ -441,14 +445,6 @@ class Shape {
 				applyIn( v.childs[i], to_obj )
 			}
 		}
-	}
-	
-
-	match ( lhand ) {
-		
-		
-		
-		return {} //list of transforms { Mat4 mat, int lvl }
 	}
 	
 	replace (lhand, rhand, transform) {

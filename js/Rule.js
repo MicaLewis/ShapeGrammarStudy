@@ -1,19 +1,15 @@
-var Rules = {}
+var rules = {}
 
-class Rule {
+var limbo = new THREE.Scene();
+
+
+function Rule(ldisp, rdisp, primary, name) {
 	
-	constructor(lhand, rhand, primary, name) {
-		this.lhand = lhand
-		this.rhand = rhand
-		this.primary = primary
-		this.name = name
-	}
+	this.ldisp = ldisp
+	this.rdisp = rdisp
+	this.primary = primary
+	this.name = name
 	
-	show() {
-		
-	}
-	
-	apply() {
-		
-	}
+	this.lshape = new Shape(limbo, true, 0)
+	this.rshape = new Shape(limbo, false, 0)
 }
