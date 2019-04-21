@@ -11,8 +11,8 @@ function selectRule(name) {
 		oldRule.rshape.copy(rd.shape, limbo)
 	}
 	
-	ld.shape.copy(rule.lshape, ld.scene)
-	rd.shape.copy(rule.rshape, rd.scene)
+	ld.shape.copy(rule.lshape)
+	rd.shape.copy(rule.rshape)
 	
 	$("#current-rule").val(name)
 }
@@ -22,7 +22,7 @@ function newRule() {
 	var name = "Rule #" + ruleCount
 	ruleCount ++
 	
-	var rule = new Rule(ld, rd, primary, name)
+	var rule = new Rule(ld, rd, pr, name)
 	rules[name] = rule
 	
 	$("#rule-menu").append('<a class="dropdown-item" href="#" onclick="selectRule(\''+name+'\')">'+name+'</a>')
@@ -36,16 +36,19 @@ function changeName() {
 	
 }
 
+var matches = [ new transform( new THREE.Matrix4().scale(2), 0 ) ]
+
 function selectMatch(index) {
+	
+	pr.highlight( ld.shape, matches[index] )
 	
 }
 
-var matches = []
 function findMatches() {
 	matches = []
 	
 	left = ld.shape
-	prime = primary.shape
+	prime = pr.shape
 	
 	prime.nterms[left.nterm.type].forEach( function(primeNterm){
 		

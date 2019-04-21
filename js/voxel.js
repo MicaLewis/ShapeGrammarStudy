@@ -4,7 +4,7 @@ var geo = new THREE.BoxGeometry()
 var wiregeo = new THREE.EdgesGeometry( geo );
 
 var normmat = new THREE.MeshLambertMaterial()
-var highmat = new THREE.MeshBasicMaterial({color: 0xff0000})
+var highmat = new THREE.MeshBasicMaterial({color: 0xbbffbb, transparent: true, opacity: 0.5})
 var ntermmat = new THREE.MeshLambertMaterial({color: 0xffffff})
 var wiremat = new THREE.LineBasicMaterial( { color: 0x000000 } )
 var invismat = new THREE.MeshBasicMaterial({visible:false})
@@ -401,16 +401,18 @@ class Shape {
 		}
 	}
 	
-	copy ( shape, scene ) {
+	copy ( shape ) {
 		
 		if(shape != this) {
-			this.del( this.root );
-			
-			this.scene = scene
+			this.del( this.root )
 			
 			this.root = this.create( (new THREE.Vector3()).subScalar( Math.pow(2, start_lvl-1) ), 0, start_lvl, null )
+			
 			this.root.object.material = new THREE.LineBasicMaterial( { color: 0xff0000 } )
-			this.nterm = shape.nterm
+			
+			if (shape.nterm != null)
+				this.nterm = this.add(shape.nterm.pos, shape.nterm.lvl, shape.nterm.type)
+			
 			this.copyIn(shape.root)
 		}
 	}
@@ -442,9 +444,8 @@ class Shape {
 			to_obj( v.object )
 			
 			for ( var i = 0; i < 8; i++ ) {
-				applyIn( v.childs[i], to_obj )
+				this.applyIn( v.childs[i], to_obj )
 			}
 		}
 	}
-	
 }

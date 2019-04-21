@@ -97,8 +97,13 @@ class Display {
 		this.highlit.copy( shape )
 		
 		this.highlit.applyToObjects( function(obj) {
-			obj.applyMatrix( transform )
-			obj.material.opacity = .5
+			//obj.applyMatrix( transform.mat )
+			
+			if( obj.material.isLineBasicMaterial ) {
+				obj.visibility = false
+			} else {
+				obj.material = highmat
+			}
 		} )
 
 	}
