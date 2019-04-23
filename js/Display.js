@@ -3,10 +3,9 @@
 //var shape;
 
 var maction = 0;
-var mlevel = -1;
+var mlevel = 0;
 
 document.addEventListener( 'keydown', function(event) {
-	event.preventDefault();
 		
 	if ( event.key == 'a' )
 		maction = maction == 1 ? 0 : 1
@@ -68,7 +67,9 @@ class Display {
 		this.scene.add(this.cursor)
 		this.scene.add(this.ground)
 		
-		this.highlit = new Shape(this.scene, lhand, max_lvl)
+		this.highlitParent = new THREE.Object3D()
+		this.scene.add(this.highlitParent)
+		this.highlit = new Shape(this.highlitParent, false, Infinity)
 		
 		this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 		
@@ -87,7 +88,7 @@ class Display {
 		
 		this.renderer.domElement.addEventListener( 'mousemove', function(event) { if(thiz.enabled) thiz.onMouseMove(event) }, false );
 		this.renderer.domElement.addEventListener( 'mouseenter', function(event) { thiz.enabled = true } )
-		this.renderer.domElement.addEventListener( 'mouseleave', function(event) { thiz.enabled = false } )
+		this.renderer.domElement.addEventListener( 'mouseleave', function(event) { thiz.enabled = false; thiz.cursor.material.opacity = 0 } )
 		this.renderer.domElement.addEventListener( 'mousedown', function(event) { if(thiz.enabled) thiz.onMouseDown(event) } )
 
 	}
@@ -96,16 +97,28 @@ class Display {
 		
 		this.highlit.copy( shape )
 		
+		this.highlitParent.matrix.identity()
+		this.highlitParent.applyMatrix(transform.mat)
+		//this.highlitParent.matrix = transform.mat
+		//this.highlitParent.updateMatrix()
+		
 		this.highlit.applyToObjects( function(obj) {
-			//obj.applyMatrix( transform.mat )
+			
+			//obj.applyMatrix(transform.mat)
 			
 			if( obj.material.isLineBasicMaterial ) {
-				obj.visibility = false
+				obj.material = invismat
 			} else {
 				obj.material = highmat
 			}
 		} )
 
+	}
+	
+	removeHighlight() {
+		this.highlit.applyToObjects( function(obj) {
+			obj.material = invismat
+		} )
 	}
 	
 	static newDisplay (id, aspect, lhand, max_lvl) {
@@ -128,7 +141,6 @@ class Display {
 	}
 
 	onMouseMove( event ) {
-		event.preventDefault();
 		
 		this.mouse.set( ( event.offsetX / this.column.clientWidth ) * 2 - 1, - ( event.offsetY / this.column.clientHeight) * 2 + 1 );
 		
@@ -136,8 +148,6 @@ class Display {
 	}
 
 	onKeyDown( event ) {
-		
-		event.preventDefault();
 		
 		this.cursor.material.color = new THREE.Color( typeColor( maction ) )
 		
@@ -148,6 +158,8 @@ class Display {
 	}
 	
 	updateCursor () {
+		
+		if ( !this.enabled ) return
 		
 		this.raycaster.setFromCamera( this.mouse, this.camera )
 		let objs = this.shape.objects(mlevel).concat(this.ground)
@@ -209,6 +221,10 @@ class Display {
 				this.shape.remove( loc, mlevel )
 				
 			}
+			
+			if( maction != 0 ) {
+				resetMatches()
+			}
 		}
 	}
 
@@ -219,8 +235,8 @@ class Display {
 	}
 }
 
-var ld = Display.newDisplay("l_col", 4/3, true, -1)
-var rd = Display.newDisplay("r_col", 4/3, false, -1)
+var ld = Display.newDisplay("l_col", 4/3, true, 0)
+var rd = Display.newDisplay("r_col", 4/3, false, 0)
 var pr = Display.newDisplay("primary", 16/9, false, Infinity)
 ld.animate()
 rd.animate()

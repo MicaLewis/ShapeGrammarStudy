@@ -4,7 +4,7 @@ var geo = new THREE.BoxGeometry()
 var wiregeo = new THREE.EdgesGeometry( geo );
 
 var normmat = new THREE.MeshLambertMaterial()
-var highmat = new THREE.MeshBasicMaterial({color: 0xbbffbb, transparent: true, opacity: 0.5})
+var highmat = new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.5})
 var ntermmat = new THREE.MeshLambertMaterial({color: 0xffffff})
 var wiremat = new THREE.LineBasicMaterial( { color: 0x000000 } )
 var invismat = new THREE.MeshBasicMaterial({visible:false})
@@ -48,7 +48,7 @@ function Voxel (pos, type, lvl, par, scene) {
 	scene.add(this.object)
 }
 
-function transform( m, l ) {
+function Transform( m, l ) {
 	this.mat = m
 	this.lvl = l
 }
@@ -194,9 +194,10 @@ class Shape {
 			
 		} else if ( v.type > 1) {
 			this.nterms[v.type].splice(this.nterms[v.type].indexOf(v), 1)
+			this.solids.splice(this.solids.indexOf(v.cube), 1)
 			
 		} else {
-			this.solids.splice(this.solids.indexOf(v.cube), 1);
+			this.solids.splice(this.solids.indexOf(v.cube), 1)
 		}
 		
 		if( v != this.root )
@@ -347,18 +348,20 @@ class Shape {
 			return null
 		}
 		
-		return searchIn(this.root, pos, lvl, scene)
+		return this.searchIn(this.root, pos, lvl)
 		
 	}
 	
 	// returns type at given position and level
 	searchIn( v, pos, lvl ) {
 		
-		var index = this.childIndex(v, pos)
-		
 		if( v == null ) {
 			return null
-		} else if( v.type > 0 || lvl == v.lvl) {
+		}
+		
+		var index = this.childIndex(v, pos)
+		
+		if( v.type > 0 || lvl == v.lvl) {
 			return v
 		} else {
 			return this.searchIn(v.childs[index], pos, lvl)
@@ -404,12 +407,16 @@ class Shape {
 	copy ( shape ) {
 		
 		if(shape != this) {
+			
+			this.max_lvl = shape.max_lvl
+			
 			this.del( this.root )
 			
 			this.root = this.create( (new THREE.Vector3()).subScalar( Math.pow(2, start_lvl-1) ), 0, start_lvl, null )
 			
 			this.root.object.material = new THREE.LineBasicMaterial( { color: 0xff0000 } )
 			
+			this.nterm = null
 			if (shape.nterm != null)
 				this.nterm = this.add(shape.nterm.pos, shape.nterm.lvl, shape.nterm.type)
 			

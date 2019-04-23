@@ -41,10 +41,10 @@
 			
 			<div class="input-group" role="group">
 				<div class="input-group-prepend">
-					<button type="button" class="btn btn-outline-secondary" id="find-matches" onclick="selectMatch(0)">Find Matches</button>
+					<button type="button" class="btn btn-outline-secondary" id="find-matches" onclick="findMatches()">Find Matches</button>
 					<span class="input-group-text" id="">Current Match:</span>
 				</div>
-				<input class="form-control" type="number" value="0" min="0" id="current-match">
+				<input class="form-control" type="number" placeholder="no matches" id="current-match" min="0" disabled>
 				<div class="input-group-append">
 					<button type="button" class="btn btn-outline-secondary" id="apply-match">Apply Match</button>
 				</div>

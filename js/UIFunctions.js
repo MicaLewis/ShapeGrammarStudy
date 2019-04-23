@@ -1,4 +1,18 @@
 
+$( document ).ready( function() {
+	
+	var slct = function(event) {
+		var index = $("#current-match").val()
+		if( index != "" && index < matches.length && index >= 0 )
+			selectMatch( $("#current-match").val() )
+	}
+	
+	$("#current-match").change( slct )
+	$("#current-match").click( slct )
+	$("#current-match").width(176)
+	
+	$("#apply-match").click( function(){applyMatch( $("#current-match").val() )} )
+})
 
 function selectRule(name) {
 	
@@ -36,12 +50,37 @@ function changeName() {
 	
 }
 
-var matches = [ new transform( new THREE.Matrix4().scale(2), 0 ) ]
+var matches = []
 
 function selectMatch(index) {
 	
 	pr.highlight( ld.shape, matches[index] )
 	
+}
+
+function applyMat4(pos, transform) {
+	
+	var newPos = pos.clone()
+	
+	var translation = new THREE.Vector3()
+	var quaternion = new THREE.Quaternion()
+	var scale = new THREE.Vector3()
+	
+	transform.mat.decompose(translation, quaternion, scale)
+	
+	newPos.multiply(scale)
+	newPos.applyQuaternion(quaternion)
+	newPos.add(translation)
+
+	return newPos
+}
+
+function resetMatches() {
+	matches = []
+	$("#current-match").prop( "disabled", true );
+	$("#current-match").val("")
+	$("#current-match").width(176)
+	pr.removeHighlight()
 }
 
 function findMatches() {
@@ -50,15 +89,31 @@ function findMatches() {
 	left = ld.shape
 	prime = pr.shape
 	
-	prime.nterms[left.nterm.type].forEach( function(primeNterm){
+	if( left.nterm.type in prime.nterms ) {
+		prime.nterms[left.nterm.type].forEach( function(primeNterm){
+			
+			t = new Transform( new THREE.Matrix4(), primeNterm.lvl-left.nterm.lvl )
+			t.mat.multiplyScalar(Math.pow(2, primeNterm.lvl-left.nterm.lvl))
+			t.mat.setPosition(primeNterm.pos)
+			
+			m = matchIn(left.root, prime, t)
+			
+			if( matchIn(left.root, prime, t) ){
+				matches.push(t)
+			}
+		})
 		
-		t = transform( new THREE.Matrix4(), primeNterm.lvl-left.nterm.lvl )
-		t.mat.setPosition(primeNterm.lvl)
-		t.mat.scale(Math.pow(2, primeNterm.lvl-left.nterm.lvl))
-		
-		var match = matchIn(left.root, prime, transform)
-		
-	})
+		if(matches.length > 0) {
+			$("#current-match").prop( "disabled", false );
+			$("#current-match").val(0);
+			$("#current-match").prop( "max", matches.length - 1 ); 
+			selectMatch(0)
+		} else {
+			resetMatches()
+		}
+	}
+	
+	
 	
 	return matches
 }
@@ -68,16 +123,53 @@ function matchIn(v, prime, transform) {
 	if( v == null || v.type > 1) {
 		return true
 	} else if( v.type == 1 ) {
-		return prime.search( v.pos.clone.applyMatrix4(transform.mat),
-		v.lvl + transform.lvl ).type == 1;
+		
+		res = prime.search( applyMat4(v.pos, transform), v.lvl + transform.lvl )
+		
+		return res != null && res.type == 1
+		
 	} else {
 		return v.childs.every( function(child){
-			matchIn(child, prime, transform)
+			return matchIn(child, prime, transform)
 		})
 	}
 }
 
+function applyMatch(index) {
+	
+	if (index == "") return 
+	
+	removeAllIn(ld.shape.root, pr.shape, matches[index])
+	addAllIn(rd.shape.root, pr.shape, matches[index])
+	
+	resetMatches()
+	
+}
 
-function applyMatch() {
+function removeAllIn(v, prime, transform) {
+	
+	if (v == null) return
+	
+	if (v.type > 0) {
+		prime.remove( applyMat4(v.pos, transform), v.lvl + transform.lvl )
+	} else {
+		v.childs.forEach( function(child){
+			removeAllIn(child, prime, transform)
+		})
+	}
+	
+}
+
+function addAllIn(v, prime, transform) {
+	
+	if (v == null) return
+	
+	if (v.type > 0) {
+		prime.add( applyMat4(v.pos, transform), v.lvl + transform.lvl, v.type )
+	} else {
+		v.childs.forEach( function(child){
+			addAllIn(child, prime, transform)
+		})
+	}
 	
 }
