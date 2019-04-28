@@ -9,17 +9,17 @@ document.addEventListener( 'keydown', function(event) {
 		
 	if ( event.key == 'a' )
 		maction = maction == 1 ? 0 : 1
-	if ( event.key == '.' )
+	else if ( event.key == '.' )
 		mlevel += 1
-	if ( event.key == ',' )
+	else if ( event.key == ',' )
 		mlevel -= 1
-	if ( event.key == 'r')
+	else if ( event.key == 'r')
 		maction = maction == -1 ? 0 : -1
-	
-	if (event.keyCode >= 48 && event.keyCode <= 57) {
-		var type = event.keyCode - 46
+	else if (event.keyCode >= 49 && event.keyCode <= 56) {
+		var type = event.keyCode - 47
 		maction = maction == type ? 0 : type
-	}
+	} else
+		maction = 0
 
 } );
 
@@ -51,6 +51,10 @@ class Display {
 		var light = new THREE.DirectionalLight(0xffffff, .5)
 		light.position.set(1, -3, 2)
 		this.scene.add( light )
+		
+		this.scene.add( new THREE.ArrowHelper( new THREE.Vector3(1,0,0), new THREE.Vector3(), 1, 0xff0000))
+		this.scene.add( new THREE.ArrowHelper( new THREE.Vector3(0,1,0), new THREE.Vector3(), 1, 0x00ff00))
+		this.scene.add( new THREE.ArrowHelper( new THREE.Vector3(0,0,1), new THREE.Vector3(), 1, 0x0000ff))
 			
 		this.cursor = new THREE.Mesh(
 			new THREE.BoxGeometry(),
@@ -104,7 +108,7 @@ class Display {
 		
 		this.highlit.applyToObjects( function(obj) {
 			
-			//obj.applyMatrix(transform.mat)
+			//obj.scale = ( new THREE.Vector3() ).setScalar(1.01)
 			
 			if( obj.material.isLineBasicMaterial ) {
 				obj.material = invismat

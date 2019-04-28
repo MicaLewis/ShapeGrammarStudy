@@ -9,9 +9,12 @@ $( document ).ready( function() {
 	
 	$("#current-match").change( slct )
 	$("#current-match").click( slct )
-	$("#current-match").width(176)
+	$("#current-match").width(100)
+	$("#current-rule").width(100)
 	
 	$("#apply-match").click( function(){applyMatch( $("#current-match").val() )} )
+	
+	$("canvas").css({"border-color": "#333333", "border-width":"1px", "border-style":"solid"});
 })
 
 function selectRule(name) {
@@ -29,6 +32,8 @@ function selectRule(name) {
 	rd.shape.copy(rule.rshape)
 	
 	$("#current-rule").val(name)
+	
+	resetMatches()
 }
 
 var ruleCount = 0
@@ -45,6 +50,11 @@ function newRule() {
 }
 newRule()
 
+function ruleColor( c ) {
+	
+	ld.shape.retype( ld.shape.nterm, c )
+	
+}
 
 function changeName() {
 	
@@ -101,6 +111,7 @@ function findMatches() {
 			if( matchIn(left.root, prime, t) ){
 				matches.push(t)
 			}
+				
 		})
 		
 		if(matches.length > 0) {

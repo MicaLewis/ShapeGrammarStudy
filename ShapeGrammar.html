@@ -21,19 +21,36 @@
 	
 	<body>
 	<div class="container">
-		<h2>Shape Grammar</h2>
+		<div class="row mt-2">
+			<h2>Shape Grammar</h2>
+		</div>
+		<div class="row mt-2">
+			Contained below is an implementation of a Shape Grammar using volumetric blocks. The basic function is to replace what is on the top left display with what is on the top right display, within the bottom display. Each shape defined in these displays is made up of terminal and non-terminal blocks. Non-terminal blocks are colored and terminal blocks are grey. Non-terminal blocks are a basis for matching a shape on the left, to a sub-shape of the bottom.<br><br>
+			The top right shape can only contain one Non-terminal block, whose color can be changed in the drop down color menu. Any grey blocks in the top right add context to what is matched on the bottom. The pair of left and right hand shapes form a "Rule". New rules can be made with the "New Rule" button. Previous rules can be retrieved from the "Select Rule" drop down menu.<br><br>
+			To find all matches of the left hand shape within the bottom shape, click the "Find Matches" button. The "Curren Match" field can be used to select a match found within the bottom shape. The selected match will be highlighted in green. Applying the match will result in the highlighted shape being removed and the right hand shape being added in its place. Keep in mind the axis as a reference for direction. Shapes will not match in other directions.<br><br>
+			Grey blocks can be thought of as "volumetric solids" meaning removing any shape from them will result in that shape being carved out of the larger block. This counts for the removal tool as well as the matching of sub shapes. Any smaller block can be matched within a larger block. When that match is applied, it will carve the smaller block from the larger one.<br><br>
+		</div>
 		<div class="btn-toolbar mb-2" role="toolbar">
 		
 			<div class="input-group flex-nowrap mr-2">
 				<div class="input-group-prepend">
 					<button type="button" class="btn btn-outline-secondary" id="new-rule" onclick="newRule()">New Rule</button>
+					<button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">Color</button>
+					<div class="dropdown-menu scrollable-menu" id="color-menu">
+						<a class="dropdown-item" href="#" onclick="ruleColor(2)">Red</a>
+						<a class="dropdown-item" href="#" onclick="ruleColor(3)">Orange</a>
+						<a class="dropdown-item" href="#" onclick="ruleColor(4)">Yellow Green</a>
+						<a class="dropdown-item" href="#" onclick="ruleColor(5)">Green</a>
+						<a class="dropdown-item" href="#" onclick="ruleColor(6)">Cyan</a>
+						<a class="dropdown-item" href="#" onclick="ruleColor(7)">Blue</a>
+						<a class="dropdown-item" href="#" onclick="ruleColor(8)">Purple</a>
+						<a class="dropdown-item" href="#" onclick="ruleColor(9)">Pink</a>
+					</div>
 					<span class="input-group-text">Current Rule:</span>
 				</div>
 				<input type="text" class="form-control" value="Rule #1" id="current-rule" disabled>
 				<div class="input-group-append">
-					<button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
-						Select Rule
-					</button>
+					<button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">Select Rule</button>
 					<div class="dropdown-menu scrollable-menu" id="rule-menu">
 					</div>
 				</div>
@@ -55,14 +72,17 @@
 			<div class="col-md-5" id="r_col"></div>
 			<div class="col-md-2">
 				<h2>Controls:</h2>
+				<b>Orbit Mode</b><br>
 				Orbit: click & drag<br>
 				Pan: shift+click & drag<br>
 				Zoom in/out: Scroll Wheel<br><br>
+				<b>Edit Mode</b><br>
 				Place terminal: a key<br>
 				Place non-terminal: 0-9 keys<br>
 				Remove block: r key<br>
 				Increase scale: . key<br>
 				Decrease scale: , key<br>
+				Return to Orbit: Any other key<br>
 			</div>
 		</div>
 		<div class="row">

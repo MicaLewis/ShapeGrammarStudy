@@ -6,7 +6,7 @@ var wiregeo = new THREE.EdgesGeometry( geo );
 var normmat = new THREE.MeshLambertMaterial()
 var highmat = new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.5})
 var ntermmat = new THREE.MeshLambertMaterial({color: 0xffffff})
-var wiremat = new THREE.LineBasicMaterial( { color: 0x000000 } )
+var wiremat = new THREE.LineBasicMaterial( { color: 0x000000, visible: false } )
 var invismat = new THREE.MeshBasicMaterial({visible:false})
 
 function typeColor ( type ) {
@@ -16,9 +16,10 @@ function typeColor ( type ) {
 	if (type == 1) return 0xcccccc
 	
 	var c = new THREE.Color()
-	c.setHSL( (type - 2)/10.0, 1, 0.5 )
-	
-	return c.getHex()
+	if(type < 10) {
+		c.setHSL( (type - 2)/8.0, 1, 0.5 )
+		return c.getHex()
+	}
 }
 
 function Voxel (pos, type, lvl, par, scene) {
@@ -70,8 +71,7 @@ class Shape {
 		
 		this.scene = scene
 		
-		this.root = this.create( (new THREE.Vector3()).subScalar( Math.pow(2, start_lvl-1) ), 0, start_lvl, null )
-		this.root.object.material = new THREE.LineBasicMaterial( { color: 0xff0000 } )
+		this.root = this.create( new THREE.Vector3(), 0, start_lvl, null )
 		
 		if ( lhand == true ) {
 			this.nterm = this.add(new THREE.Vector3(0, 0, 0), max_lvl, 2);
@@ -134,11 +134,16 @@ class Shape {
 	// handles changing of type
 	retype(v, type) {
 		
-		v.type = type
 		this.scene.remove(v.object)
 		
 		var scl = v.object.scale
 		var pos = v.object.position
+		
+		if(v.type > 1) {
+			this.nterms[v.type].splice(this.nterms[v.type].indexOf(v), 1)
+		} else if (v.type < 1) {
+			this.boundaries[v.lvl].splice(this.boundaries[v.lvl].indexOf(v.cube), 1)
+		}
 		
 		if(type < 1) {
 			
@@ -160,19 +165,18 @@ class Shape {
 			
 		} else {
 			
-			// remove current place in nterm list
-			this.nterms[v.type].splice(this.nterms[v.type].indexOf(v), 1)
-			
-			// re-push into correct list
 			if( !( type in this.nterms ) )
 				this.nterms[type] = []
-			this.nterms[type].push(newVoxel.cube)
 			
-			v.object = new THREE.Mesh( geo, ntermmat )
+			this.nterms[type].push(v)
+			
+			v.object = new THREE.Mesh( geo, ntermmat.clone() )
 			v.object.material.color = new THREE.Color( typeColor(type) )
 			this.solids.push(v.cube)
 			
 		}
+		
+		v.type = type
 		
 		v.object.scale.copy(scl)
 		v.object.position.copy(pos)
@@ -232,6 +236,8 @@ class Shape {
 	// Is called recursively on all parents except root
 	merge(v) {
 		
+		if( v.lvl >= this.max_lvl ) return
+		
 		var same = (v.childs[0] != null || v.type != 0) && v != this.root && v.childs[0] != 0
 		
 		for( var i = 1; i < 8; i++ ) {
@@ -248,14 +254,7 @@ class Shape {
 			}
 			this.retype(v, type)
 			
-			if( v.lvl < this.max_lvl ) {
-				return this.merge(v.par)
-			} else {
-				return v
-			}
-			
-		} else {
-			return v
+			this.merge(v.par)
 		}
 	}
 	
@@ -280,10 +279,26 @@ class Shape {
 	
 	add(pos, lvl, type) {
 		
-		if( this.oob(this.root, pos) || lvl > this.max_lvl || ( this.nterm != null && type > 1 ) ) {
-			//add root expansion later
-			return null
+		if( lvl > this.max_lvl || ( this.nterm != null && type > 1 ) ) return null
+		
+		var scl
+		var oldRoot = this.root
+		while( this.oob( this.root, pos ) ) {
+			var scl = Math.pow(2, this.root.lvl)
+			
+			let newRoot = this.create(
+				new THREE.Vector3(
+					this.root.pos.x + scl*(pos.x < 0 ? -1 : 0),
+					this.root.pos.y + scl*(pos.y < 0 ? -1 : 0),
+					this.root.pos.z + scl*(pos.z < 0 ? -1 : 0) ),
+				0, this.root.lvl + 1, null )
+				
+			this.root.par = newRoot
+			newRoot.childs[this.childIndex(newRoot, this.root.pos)] = this.root
+			this.root = newRoot
 		}
+		
+		this.clear(oldRoot)
 		
 		return this.addIn( this.root, pos, lvl, type )
 		
@@ -292,11 +307,35 @@ class Shape {
 	addIn( v, pos, lvl, type) {
 		
 		var index = this.childIndex(v, pos)
+		var child = v.childs[index]
 		
-		if( v.type == 1 ) {
+		if( child == null ) {
+			
+			if( lvl == v.lvl - 1 ) {
+				
+				v.childs[index] = this.create( this.childPos(index, v), type, lvl, v)
+				this.merge(v)
+				return v.childs[index]
+				
+			} else {
+				
+				v.childs[index] = this.create( this.childPos(index, v), 0, v.lvl-1, v)
+				
+				return this.addIn( v.childs[index], pos, lvl, type )
+			}
+			
+		} else if( child.type == 0 ) {
+			
+			return this.addIn( child, pos, lvl, type )
+			
+		} else {
+			return v
+		}
+		
+		/*if( v.type == 1 ) {
 			
 			if( type == 1 ) {
-				return true
+				return v
 				
 			} else if ( type > 1 ) {
 				
@@ -305,7 +344,7 @@ class Shape {
 				if( v.lvl-1 == lvl ) {
 					
 					v.childs[index] = this.create( this.childPos(index, v), type, lvl, v)
-					return true
+					return v.childs[index]
 					
 				} else {
 					return this.addIn( v.childs[index], pos, lvl, type )
@@ -329,7 +368,8 @@ class Shape {
 			} else {
 				
 				v.childs[index] = this.create( this.childPos(index, v), type, lvl, v )
-				return this.merge(v.childs[index])
+				this.merge(v)
+				return v.childs[index]
 			}
 			
 		} else if( v.lvl-1 > lvl ) {
@@ -337,14 +377,14 @@ class Shape {
 			
 		} else if( v.childs[index].type != 0 ) {
 			v.childs[index] = this.create( this.childPos(index, v), type, lvl, v )
-			return this.merge(v.childs[index])
-		}
+			this.merge(v)
+			return v.childs[index]
+		}*/
 	}
 
 	search( pos, lvl ) {
 		
 		if( this.oob(this.root, pos) ) {
-			//add root expansion later
 			return null
 		}
 		
@@ -412,9 +452,9 @@ class Shape {
 			
 			this.del( this.root )
 			
-			this.root = this.create( (new THREE.Vector3()).subScalar( Math.pow(2, start_lvl-1) ), 0, start_lvl, null )
+			this.root = this.create( new THREE.Vector3(), 0, start_lvl, null )
 			
-			this.root.object.material = new THREE.LineBasicMaterial( { color: 0xff0000 } )
+			//this.root.object.material = wiremat
 			
 			this.nterm = null
 			if (shape.nterm != null)
